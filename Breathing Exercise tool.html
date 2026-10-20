@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breathing Exercise Tool</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: #eef5f1;
+  color: #243b35;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  width: 100%;
+  max-width: 440px;
+  padding: 35px 24px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px #254c3612;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 27px;
+}
+
+.subtitle {
+  margin: 0 0 30px;
+  color: #788a82;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.breathing-area {
+  height: 260px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.circle {
+  width: 130px;
+  height: 130px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a8e6cf, #65bfa4);
+  box-shadow: 0 0 35px #79c9ab45;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: bold;
+  transition: transform 1s ease, background 1s ease;
+}
+
+.circle.inhale {
+  transform: scale(1.65);
+  background: linear-gradient(135deg, #91d8c0, #48a88b);
+}
+
+.circle.hold {
+  transform: scale(1.65);
+  background: linear-gradient(135deg, #a8d9c8, #70b8a1);
+}
+
+.circle.exhale {
+  transform: scale(1);
+  background: linear-gradient(135deg, #a8e6cf, #65bfa4);
+}
+
+.phase {
+  margin: 15px 0 8px;
+  font-size: 23px;
+  font-weight: bold;
+}
+
+.instruction {
+  min-height: 22px;
+  margin: 0;
+  color: #788a82;
+  font-size: 14px;
+}
+
+.timer {
+  margin: 18px 0;
+  color: #477e69;
+  font-size: 34px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  font-size: 14px;
+}
+
+select {
+  padding: 9px 12px;
+  border: 1px solid #d4e4dc;
+  border-radius: 8px;
+  background: #f7fbf8;
+  color: #243b35;
+  font-size: 14px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+button {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 10px;
+  background: #4caa88;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+button:hover {
+  background: #388d6d;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#resetBtn {
+  background: #edf4f0;
+  color: #477e69;
+}
+
+#resetBtn:hover {
+  background: #dcebe3;
+}
+
+.footer {
+  margin-top: 25px;
+  color: #91a39a;
+  font-size: 12px;
+}
+
+@media (max-width: 380px) {
+  .container {
+    padding: 28px 16px;
+  }
+
+  .breathing-area {
+    height: 230px;
+  }
+
+  .circle.inhale,
+  .circle.hold {
+    transform: scale(1.45);
+  }
+}
+</style>
+</head>
+
+<body>
+<main class="container">
+  <h1>Breathing Exercise Tool</h1>
+  <p class="subtitle">Slow down, breathe deeply, and find your calm.</p>
+
+  <div class="breathing-area">
+    <div class="circle" id="circle">Ready</div>
+  </div>
+
+  <div class="phase" id="phase">Ready to begin</div>
+  <p class="instruction" id="instruction">Find a comfortable position.</p>
+  <div class="timer" id="timer">00:00</div>
+
+  <div class="settings">
+    <label for="duration">Session length</label>
+    <select id="duration">
+      <option value="1">1 minute</option>
+      <option value="3" selected>3 minutes</option>
+      <option value="5">5 minutes</option>
+      <option value="10">10 minutes</option>
+    </select>
+  </div>
+
+  <div class="buttons">
+    <button id="startBtn">Start</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <div class="footer">Breathe in. Hold. Breathe out.</div>
+</main>
+
+<script>
+const circle = document.getElementById("circle");
+const phase = document.getElementById("phase");
+const instruction = document.getElementById("instruction");
+const timer = document.getElementById("timer");
+const durationSelect = document.getElementById("duration");
+const startBtn = document.getElementById("startBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+const phases = [
+  { name: "Inhale", duration: 4, instruction: "Breathe in slowly.", className: "inhale" },
+  { name: "Hold", duration: 4, instruction: "Hold your breath gently.", className: "hold" },
+  { name: "Exhale", duration: 6, instruction: "Breathe out slowly.", className: "exhale" }
+];
+
+let running = false;
+let phaseIndex = 0;
+let secondsLeft = 0;
+let elapsed = 0;
+let sessionLength = 180;
+let interval = null;
+let phaseStartedAt = 0;
+let phaseDuration = 0;
+
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+
+  return String(minutes).padStart(2, "0") + ":" +
+         String(remaining).padStart(2, "0");
+}
+
+function updateTimer() {
+  timer.textContent = formatTime(Math.max(0, sessionLength - elapsed));
+}
+
+function showPhase() {
+  const current = phases[phaseIndex];
+
+  phase.textContent = current.name;
+  instruction.textContent = current.instruction;
+  circle.textContent = current.name;
+  circle.className = "circle " + current.className;
+
+  phaseDuration = current.duration;
+  phaseStartedAt = Date.now();
+  secondsLeft = phaseDuration;
+}
+
+function tick() {
+  if (!running) return;
+
+  const now = Date.now();
+  elapsed = Math.min(
+    sessionLength,
+    Math.floor((now - sessionStartTime) / 1000)
+  );
+
+  updateTimer();
+
+  if (elapsed >= sessionLength) {
+    finishSession();
+    return;
+  }
+
+  const phaseElapsed = (now - phaseStartedAt) / 1000;
+  secondsLeft = Math.ceil(phaseDuration - phaseElapsed);
+
+  if (phaseElapsed >= phaseDuration) {
+    phaseIndex = (phaseIndex + 1) % phases.length;
+    showPhase();
+  }
+}
+
+let sessionStartTime = 0;
+
+function startSession() {
+  if (running) {
+    pauseSession();
+    return;
+  }
+
+  if (elapsed >= sessionLength) {
+    resetSession();
+  }
+
+  running = true;
+  startBtn.textContent = "Pause";
+  durationSelect.disabled = true;
+
+  if (elapsed === 0) {
+    sessionStartTime = Date.now();
+    phaseIndex = 0;
+    showPhase();
+  } else {
+    sessionStartTime = Date.now() - elapsed * 1000;
+    phaseStartedAt = Date.now() - (phaseDuration - secondsLeft) * 1000;
+  }
+
+  interval = setInterval(tick, 100);
+}
+
+function pauseSession() {
+  if (!running) return;
+
+  tick();
+
+  if (!running) return;
+
+  running = false;
+  clearInterval(interval);
+  startBtn.textContent = "Resume";
+  circle.textContent = "Paused";
+  phase.textContent = "Session paused";
+  instruction.textContent = "Continue whenever you're ready.";
+  circle.className = "circle";
+}
+
+function finishSession() {
+  running = false;
+  clearInterval(interval);
+
+  elapsed = sessionLength;
+  updateTimer();
+
+  circle.className = "circle";
+  circle.textContent = "✓";
+  phase.textContent = "Well done!";
+  instruction.textContent = "Your breathing session is complete.";
+  startBtn.textContent = "Start Again";
+  durationSelect.disabled = false;
+}
+
+function resetSession() {
+  running = false;
+  clearInterval(interval);
+
+  elapsed = 0;
+  phaseIndex = 0;
+  secondsLeft = 0;
+  sessionLength = Number(durationSelect.value) * 60;
+
+  circle.className = "circle";
+  circle.textContent = "Ready";
+  phase.textContent = "Ready to begin";
+  instruction.textContent = "Find a comfortable position.";
+  startBtn.textContent = "Start";
+  durationSelect.disabled = false;
+
+  updateTimer();
+}
+
+startBtn.addEventListener("click", startSession);
+
+resetBtn.addEventListener("click", resetSession);
+
+durationSelect.addEventListener("change", () => {
+  if (!running) {
+    sessionLength = Number(durationSelect.value) * 60;
+    elapsed = 0;
+    updateTimer();
+  }
+});
+
+resetSession();
+</script>
+</body>
+</html>
